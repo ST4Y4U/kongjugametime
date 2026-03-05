@@ -334,6 +334,7 @@
      * 0) 기본 상수/유틸
      ************************/
     const DAYS = ["월","화","수","목","금"];
+    const STORAGE_KEY = "timetable_v1";
     const PERIODS = [
       {p:1, label:"1교시", time:"9:00"},
       {p:2, label:"2교시", time:"10:00"},
@@ -347,6 +348,28 @@
       {p:10,label:"10교시", time:"18:00"},
       {p:11,label:"11교시", time:"19:00"},
     ];
+
+    function saveState(){
+      const data = {
+        placed: Array.from(placed),
+        colorById,
+        gradeFilter: Array.from(gradeFilter),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+    
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return;
+        const date = JSON.parse(raw);
+     
+        if(Array.isArray(data.placed)) placed = new Set(data.placed.map(String));
+        if(data.colorsById && typeof data.colorsById === "object") colorsById = data.colorsById;
+        if(Array.isArray(data.gradeFilter)) gradeFilter = new Set(data.gradeFilter.map(Number));
+      }catch(e){
+      }
+    }
 
     // "월123" / "화567" 같은 문자열을 {day:"월", periods:[1,2,3]} 로 파싱
     function parseTimeToken(token){
@@ -376,7 +399,7 @@
     let placed = new Set();      // 시간표에 배치된 courseId
     let occupancy = {};          // {"월-1": ["CS101","..."], ...}
     let conflictSet = new Set(); // 겹치는 courseId
-    let listFilterGrade = "ALL"; // 리스트 표시용 (시간표 편성은 무관)
+    let gradeFilter = new Set([1,2,3,4]); // 리스트 표시용 (시간표 편성은 무관)
 
     /***********************
      * 2) 데이터 로드
@@ -474,7 +497,7 @@
             <div class="meta">${escapeHtml(c.room)} · ${escapeHtml(c.category)} · ${escapeHtml(c.req)}</div>
           `;
 
-          block.title = "클릭하면 시간표에서 제거";
+          block.title = "클릭하여 시간표에서 제거";
           block.addEventListener("click", () => {
             removeCourse(c.id);
           });
@@ -525,18 +548,20 @@
 
     function addCourse(id){
       placed.add(id);
+      saveState();
       renderGrid();
     }
 
     function removeCourse(id){
       placed.delete(id);
+      saveState();
       renderGrid();
-      // 리스트쪽 버튼 상태 갱신
       renderAccordions();
     }
 
     function resetTimetable(){
       placed.clear();
+      saveState();
       renderGrid();
       renderAccordions();
     }
@@ -546,27 +571,36 @@
      ************************/
     function renderGradeToggles(){
       const el = document.getElementById("gradeToggles");
-      const items = [
-        {key:"ALL", label:"전체"},
-        {key:"1", label:"1학년"},
-        {key:"2", label:"2학년"},
-        {key:"3", label:"3학년"},
-        {key:"4", label:"4학년"},
-      ];
       el.innerHTML = "";
-      for(const it of items){
+
+      const allBtn = document.createElement("div");
+      const allActive = gradeFilter.size === 4;
+      allBtn.className = "pill" + (allActive ? " active" : "");
+      allBtn.textContent = "전체";
+      allBtn.addEventListener("click", () => {
+        if (gradeFilter.size === 4) gradeFilter = new Set();
+        else gradeFilter = new Set([1,2,3,4]); 
+        saveState();
+        renderGradeToggles();
+        renderAccordions();
+      });
+      el.appendChild(allBtn);
+      
+      for (const g of [1,2,3,4]) {
         const div = document.createElement("div");
-        div.className = "pill" + (listFilterGrade === it.key ? " active" : "");
-        div.textContent = it.label;
+        div.className = "pill" + (gradeFilter.has(g) ? " active" : "");
+        div.textContent = `${g}학년`;
         div.addEventListener("click", () => {
-          listFilterGrade = it.key;
+          if (gradeFilter.has(g)) gradeFilter.delete(g);
+          else gradeFilter.add(g);
+          saveState();
           renderGradeToggles();
           renderAccordions();
         });
         el.appendChild(div);
       }
-    }
-
+    }   
+      
     function renderAccordions(){
       const host = document.getElementById("courseAccordions");
       host.innerHTML = "";
@@ -580,12 +614,8 @@
       const gradeOrder = [1,2,3,4];
       for(const g of gradeOrder){
         const list = byGrade.get(g) || [];
-        const filtered = (listFilterGrade === "ALL" || String(g) === listFilterGrade)
-          ? list
-          : [];
-
-        // 토글이 특정 학년일 때는 그 학년만 보여주고, 나머진 아예 숨김
-        if(listFilterGrade !== "ALL" && String(g) !== listFilterGrade) continue;
+        if(!gradeFilter.has(g)) continue;
+        const filtered = list;
 
         const details = document.createElement("details");
         details.open = true;
@@ -621,6 +651,7 @@
           colorInput.title = "블록 색상";
           colorInput.addEventListener("input", (e) => {
             colorsById[c.id] = e.target.value;
+            saveState();
             renderGrid(); // 배치된 블록이면 즉시 반영
           });
 
