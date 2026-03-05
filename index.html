@@ -352,7 +352,7 @@
     function saveState(){
       const data = {
         placed: Array.from(placed),
-        colorById,
+        colorsById,
         gradeFilter: Array.from(gradeFilter),
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -362,7 +362,7 @@
       try{
         const raw = localStorage.getItem(STORAGE_KEY);
         if(!raw) return;
-        const date = JSON.parse(raw);
+        const data = JSON.parse(raw);
      
         if(Array.isArray(data.placed)) placed = new Set(data.placed.map(String));
         if(data.colorsById && typeof data.colorsById === "object") colorsById = data.colorsById;
@@ -441,7 +441,7 @@
       for(const it of PERIODS){
         el.appendChild(
           makeCell(
-            `${it.label}<br><span style="font-weight:600;color;rgba(255,255,255,.55)">${it.time}</span>`,
+            `${it.label}<br><span style="font-weight:600;color:rgba(255,255,255,.55)">${it.time}</span>`,
             "cell time"
             )
           );
@@ -578,8 +578,7 @@
       allBtn.className = "pill" + (allActive ? " active" : "");
       allBtn.textContent = "전체";
       allBtn.addEventListener("click", () => {
-        if (gradeFilter.size === 4) gradeFilter = new Set();
-        else gradeFilter = new Set([1,2,3,4]); 
+        gradeFilter = new Set([1,2,3,4]);
         saveState();
         renderGradeToggles();
         renderAccordions();
@@ -702,6 +701,7 @@
         seen.add(c.id);
         return true;
       });
+      loadState();
 
       // 기본 색 채우기
       for(const c of courses){
