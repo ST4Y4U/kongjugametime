@@ -83,8 +83,8 @@
     /* 시간표 그리드: (1열=요일 라벨) + (11열=1~11교시) */
     .timetable{
       display:grid;
-      grid-template-columns: 90px repeat(11, minmax(88px, 1fr));
-      grid-template-rows: 44px repeat(5, var(--cellH));
+      grid-template-columns: 120px repeat(5, minmax(120px, 1fr));
+      grid-template-rows: 44px repeat(11, var(--cellH));
       min-width: 90px + 11*88px;
     }
     .cell{
@@ -108,7 +108,7 @@
       font-size:12px;
       border-bottom:1px solid var(--line);
     }
-    .cell.day{
+    .cell.time{
       position:sticky;
       left:0;
       z-index:2;
@@ -411,19 +411,21 @@
       el.appendChild(makeCell("", "cell header corner"));
 
       // 상단 헤더(교시)
-      for(const it of PERIODS){
-        el.appendChild(makeCell(`${it.label}<br><span style="font-weight:600;color:rgba(255,255,255,.55)">${it.time}</span>`, "cell header"));
+      for(const d of DAYS){
+        el.appendChild(makeCell(d, "cell header"));
       }
 
-      // 요일 + 빈칸들
-      for(const d of DAYS){
-        el.appendChild(makeCell(d, "cell day"));
-        for(let p=1; p<=11; p++){
+      for(const it of PERIODS){
+        el.appendChild(
+          makeCell(
+            `${it.label}<br><span style="font-weight:600;color;rgba(255,255,255,.55)">${it.time}</span>`,
+            "cell time"
+            )
+          );
+        for(let i=0; i<5; i++){
           el.appendChild(makeCell("", "cell"));
         }
       }
-
-      // 블록들
       renderBlocks(el);
     }
 
@@ -464,8 +466,8 @@
           // grid positioning:
           // rows: 1 header, then day rows start at 2
           // cols: 1 day label, then periods start at 2
-          block.style.gridRow = (2 + dayIndex) + " / span 1";
-          block.style.gridColumn = (2 + (start - 1)) + " / span " + span;
+          block.style.gridRow = (2 + (start - 1)) + " / span " + span;
+          block.style.gridColumn = (2 + dayIndex) + " / span 1";
 
           block.innerHTML = `
             <div class="name">${escapeHtml(c.name)}</div>
