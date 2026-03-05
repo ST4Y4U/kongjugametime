@@ -291,6 +291,46 @@
       .left{ min-width:unset; }
       .right{ min-height:55vh; }
     }
+    .splitWrap{
+      display:flex;
+      width:100%;
+      height:100%;
+    }
+    .timeCol{
+      width:120px;
+      flex: 0 0 120px;
+      border-right:1px solid var(--line);
+      background:rgba(0,0,0,.10);
+      overflow:hidden; /* 스크롤바 숨기고, JS로 scrollTop만 맞출 거임 */
+    }
+    .mainScroll{
+      flex:1;
+      overflow:auto; /* 스크롤은 여기서만 */
+    }
+    .mainGrid{
+      display:grid;
+      grid-template-columns: repeat(5, minmax(120px, 1fr)); /* 월~금 */
+      grid-template-rows: 44px repeat(11, var(--cellH));   /* 헤더 + 1~11교시 */
+    }
+    .timeCol{
+      display:grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: 44px repeat(11, var(--cellH));
+    }
+    .cell.header{
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background:rgba(11,15,23,.92);
+    }
+    .cell.time{
+      justify-content:flex-start;
+      padding-left:12px;
+      color:rgba(255,255,255,.78);
+      font-weight:600;
+      background:rgba(11,15,23,.92);
+    }
+    .block{ z-index: 3; }
   </style>
 </head>
 
@@ -320,9 +360,14 @@
       </div>
 
       <div class="gridWrap">
-        <div class="timetable" id="timetable"></div>
-      </div>
-
+        <div class="splitWrap">
+          <div class="timeCol" id="timeCol"></div>
+          <div class="mainScroll" id="mainScroll">
+            <div class="mainGrid" id="timetable"></div>
+            </div>
+          </div>
+        </div>
+    
       <div class="bottomBar">
         <button class="danger" id="resetBtn">시간표 초기화 🧨</button>
       </div>
@@ -427,29 +472,38 @@
      * 3) 시간표 그리드 렌더
      ************************/
     function renderGrid(){
-      const el = document.getElementById("timetable");
-      el.innerHTML = "";
+      const main = document.getElementById("timetable"); // mainGrid
+      const timeCol = document.getElementById("timeCol");
 
-      // 좌상단 코너
-      el.appendChild(makeCell("", "cell header corner"));
+      main.innerHTML = "";
+      timeCol.innerHTML = "";
 
-      // 상단 헤더(교시)
+      // timeCol: 상단 빈칸(헤더 높이 맞추기)
+      timeCol.appendChild(makeCell("", "cell header"));
+
+      // main: 상단 요일 헤더
       for(const d of DAYS){
-        el.appendChild(makeCell(d, "cell header"));
+        main.appendChild(makeCell(d, "cell header"));
       }
 
+      // 각 교시 행
       for(const it of PERIODS){
-        el.appendChild(
+        // timeCol: 시간 라벨
+        timeCol.appendChild(
           makeCell(
             `${it.label}<br><span style="font-weight:600;color:rgba(255,255,255,.55)">${it.time}</span>`,
             "cell time"
-            )
-          );
+          )
+        );
+
+        // main: 월~금 빈칸 5개
         for(let i=0; i<5; i++){
-          el.appendChild(makeCell("", "cell"));
+          main.appendChild(makeCell("", "cell"));
         }
       }
-      renderBlocks(el);
+
+  // 블록은 main에만 렌더
+      renderBlocks(main);
     }
 
     function makeCell(html, cls){
@@ -490,7 +544,7 @@
           // rows: 1 header, then day rows start at 2
           // cols: 1 day label, then periods start at 2
           block.style.gridRow = (2 + (start - 1)) + " / span " + span;
-          block.style.gridColumn = (2 + dayIndex) + " / span 1";
+          block.style.gridColumn = (1 + dayIndex) + " / span 1";
 
           block.innerHTML = `
             <div class="name">${escapeHtml(c.name)}</div>
@@ -711,6 +765,13 @@
       renderGradeToggles();
       renderAccordions();
       renderGrid();
+      const mainScroll = document.getElementById("mainScroll");
+      const timeCol = document.getElementById("timeCol");
+
+      mainScroll.addEventListener("scroll", (e) => {
+        timeCol.scrollTop = e.target.scrollTop;
+      });
+      
     })();
   </script>
 </body>
