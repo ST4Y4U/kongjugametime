@@ -421,7 +421,8 @@
       // day: 한글 1글자(월~금) + 뒤는 숫자들
       const day = token?.trim()?.[0];
       const nums = token?.trim()?.slice(1) || "";
-      const periods = [...nums].map(ch => parseInt(ch,10)).filter(n => Number.isFinite(n));
+      const matches = nums.match(/10|11|[1-9]/g) || [];
+      const periods = matches.map(s => parseInt(s, 10));
       if(!DAYS.includes(day)) return null;
       if(periods.some(p => p < 1 || p > 11)) return null;
       return { day, periods };
