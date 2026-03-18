@@ -83,9 +83,9 @@
     /* 시간표 그리드: (1열=요일 라벨) + (11열=1~11교시) */
     .timetable{
       display:grid;
-      grid-template-columns: 120px repeat(5, minmax(120px, 1fr));
+      grid-template-columns: 120px repeat(5, 140px);
       grid-template-rows: 44px repeat(11, var(--cellH));
-      min-width: 90px + 11*88px;
+      min-width: 820px;
     }
     .cell{
       border-right:1px solid var(--line);
@@ -268,7 +268,7 @@
       align-items:center;
       gap:8px;
       flex-wrap:wrap;
-      justify-content:flex-end;
+      justify-content: flex-start;
     }
     input[type="color"]{
       width:42px; height:34px;
