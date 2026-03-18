@@ -702,7 +702,7 @@
       const room = document.getElementById("tempRoom").value.trim() || "미정";
       const category = document.getElementById("tempCategory").value;
       const req = document.getElementById("tempReq").value;
-      const req = document.getElementById("tempReq").value;
+      const reqType = document.getElementById("tempReq").value;
       
       msg.textContent = "";
 
@@ -753,7 +753,7 @@
         times,
         room,
         category,
-        req,
+        req: reqType,
         grade,
         isTemp: true
       };
