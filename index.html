@@ -331,6 +331,46 @@
       background:rgba(11,15,23,.92);
     }
     .block{ z-index: 3; }
+    .tempForm{
+      display:flex;
+      flex-direction:coiumn;
+      gap:8px;
+      padding:12px;
+      border:1px soild var(--line);
+      border-radius:12px;
+      background:rgba(255,255,255,.04);
+      margin-bottom:14px;
+    }
+    .tempForm input,
+    .tempForm select{
+      width:100%;
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+    }
+
+    .tempGrid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:8px;
+    }
+
+    #addTempCourseBtn{
+      width:100%;
+    }
+
+    #tempCourseMsg{
+      min-height:18px;
+    }
+
+    @media (max-width:900px){
+      .tempGrid{
+        grid-template-columns:1fr;
+      }
+    }
+    
   </style>
 </head>
 
@@ -346,6 +386,37 @@
       <div class="sectionTitle">학년 토글 🧷</div>
       <div class="row" id="gradeToggles"></div>
 
+      <div style="height:6px"></div>
+
+      <div class="sectionTitle">강의 추가 ✍️</div>
+      <div class="tempForm">
+        <input id="tempName" type="text" placeholder="과목명" />
+        <input id="tempTimes" type="text" placeholder="시간 예: 월123, 수91011" />
+        <input id="tempRoom" type="text" placeholder="강의실 (선택)" />
+
+        <div class="tempGrid">
+          <select id="tempCategory">
+            <option value="전공">전공</option>
+            <option value="교양">교양</option>
+          </select>
+
+          <select id="tempReq">
+            <option value="선택">선택</option>
+            <option value="필수">필수</option>
+          </select>
+
+          <select id="tempGrade">
+            <option walue="1">1학년</option>
+            <option walue="2">2학년</option>
+            <option walue="3">3학년</option>
+            <option walue="4">4학년</option>
+          </select>
+        </div>
+        
+        <button id="addTempCourseBtn">강의 추가</button>
+        <div id="tempCourseMsg" class="muted"></div>
+      </div>
+      
       <div style="height:6px"></div>
 
       <div class="sectionTitle">학년별 강의</div>
@@ -399,6 +470,7 @@
         placed: Array.from(placed),
         colorsById,
         gradeFilter: Array.from(gradeFilter),
+        tempCourses
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     }
@@ -412,6 +484,7 @@
         if(Array.isArray(data.placed)) placed = new Set(data.placed.map(String));
         if(data.colorsById && typeof data.colorsById === "object") colorsById = data.colorsById;
         if(Array.isArray(data.gradeFilter)) gradeFilter = new Set(data.gradeFilter.map(Number));
+        if(Array.isArray(data.tempCourses)) tempCourses = data.tempCourses;
       }catch(e){
       }
     }
@@ -446,6 +519,7 @@
     let occupancy = {};          // {"월-1": ["CS101","..."], ...}
     let conflictSet = new Set(); // 겹치는 courseId
     let gradeFilter = new Set([1,2,3,4]); // 리스트 표시용 (시간표 편성은 무관)
+    let tempCourses = [];
 
     /***********************
      * 2) 데이터 로드
@@ -621,6 +695,84 @@
       renderAccordions();
     }
 
+    function addTempCourse(){
+      const msg = document.getElementById("tempCourseMsg");
+      const name = document.getElementById("tempName").value.trim();
+      const timesRaw = document.getElementById("tempTimes").value.trim();
+      const room = document.getElementById("tempRoom").value.trim() || "미정";
+      const category = document.getElementById("tempCategory").value;
+      const req = document.getElementById("tempReq").value;
+      const req = document.getElementById("tempReq").value;
+      
+      msg.textContent = "";
+
+      if(!name){
+        msg.textContent = "과목명을 입력하세요.";
+        return;
+      }
+
+      if(!timesRaw){
+        msg.textContent = "강의 시간을 입력해주세요. 예: 월123, 수91011";
+        return;
+      }
+
+      const duplicate = courses.some(c => c.name.trim() === name);
+      if(duplicate){
+        msg.textContent = "이미 존재하는 강의명입니다.";
+        return;
+      }
+
+      const times = timesRaw
+        .split(",")
+        .map(v => v.trim())
+        .filter(Boolean);
+
+      if(!times.length){
+        msg.textContent = "강의 시간을 다시 입력해주세요.";
+        return;
+      }
+
+      for(const t of times){
+        const parsed = parseTimeToken(t);
+        if(!parsed){
+          msg.textContent = `시간 형식 오류: ${t}`;
+          return;
+        }
+      }
+
+      const newId = String(
+        Math.max(
+          0,
+          ...courses.map(c => Number(c.id)).filter(n => Number.isFinite(n))
+          ) + 1
+        );
+
+      const newCourse = {
+        id newId,
+        name,
+        times,
+        room,
+        category,
+        req,
+        grade,
+        isTemp: true
+      };
+
+      courses.push(newCourse);
+      tempCourses.push(newCourse);
+      colorsById[newId] = defaultColorFor(newId);
+
+      saveState();
+      renderGradeToggles();
+      renderAccordions();
+      renderGrid();
+
+      document.getElementById("tempName").value = "";
+      document.getElementById("tempTimes").value = "";
+      document.getElementById("tempRoom").value = "";
+      msg.textContent = "강의가 추가되었습니.";
+    }
+
     /***********************
      * 5) 왼쪽: 학년 토글 + 아코디언(접기/펼치기) + 색 지정
      ************************/
@@ -650,7 +802,7 @@
           saveState();
           renderGradeToggles();
           renderAccordions();
-        });
+        });a
         el.appendChild(div);
       }
     }   
@@ -758,6 +910,10 @@
       });
       loadState();
 
+      if(tempCourses.length){
+        courses = [...courses, ...tempCourses];
+      }
+
       // 기본 색 채우기
       for(const c of courses){
         if(!colorsById[c.id]) colorsById[c.id] = defaultColorFor(c.id);
@@ -772,6 +928,11 @@
       mainScroll.addEventListener("scroll", (e) => {
         timeCol.scrollTop = e.target.scrollTop;
       });
+
+      const addTempBtn = document.getElementById("addTempCourseBtn");
+      if(addTempBtn){
+        addTempBtn.addEventListener("click", addTempCourse);
+      }
       
     })();
   </script>
